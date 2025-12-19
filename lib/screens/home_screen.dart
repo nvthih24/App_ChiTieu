@@ -1,53 +1,20 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'add_transaction_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/transaction_provider.dart';
+import 'package:intl/intl.dart';
+import '../models/transaction.dart';
+import 'dart:ui';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
-
-  final List<Map<String, dynamic>> transactions = [
-    {
-      "title": "Ăn sáng Starbucks",
-      "category": "Ăn uống",
-      "amount": "120.000đ",
-      "icon": Icons.fastfood_rounded,
-      "color": Colors.orange,
-      "isExpense": true,
-      "date": "Hôm nay",
-    },
-    {
-      "title": "Lương tháng 12",
-      "category": "Thu nhập",
-      "amount": "15.000.000đ",
-      "icon": Icons.payments_rounded,
-      "color": Colors.green,
-      "isExpense": false,
-      "date": "Hôm qua",
-    },
-    {
-      "title": "Grab/Be Car",
-      "category": "Di chuyển",
-      "amount": "55.000đ",
-      "icon": Icons.directions_car_filled_rounded,
-      "color": Colors.blue,
-      "isExpense": true,
-      "date": "18 Th12",
-    },
-    {
-      "title": "Gói Adobe Full",
-      "category": "Giải trí",
-      "amount": "250.000đ",
-      "icon": Icons.subscriptions_rounded,
-      "color": Colors.purple,
-      "isExpense": true,
-      "date": "15 Th12",
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
     final transactionProvider = Provider.of<TransactionProvider>(context);
     final transactions = transactionProvider.transactions;
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     return Scaffold(
       backgroundColor: AppColors.background,
       floatingActionButton: FloatingActionButton(
@@ -96,6 +63,21 @@ class HomeScreen extends StatelessWidget {
           _buildBackgroundHeader(context),
 
           // Lớp 2: Nội dung có thể cuộn (Scrollable Content)
+          Positioned(
+            top: -100,
+            left: -50,
+            child: _buildBlurCircle(Colors.white.withOpacity(0.2), 200),
+          ),
+
+          Positioned(
+            top: 100,
+            right: -80,
+            child: _buildBlurCircle(
+              AppColors.primaryLight.withOpacity(0.4),
+              250,
+            ),
+          ),
+
           SafeArea(
             child: SingleChildScrollView(
               child: Column(
@@ -103,9 +85,9 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   _buildTopNav(),
                   const SizedBox(height: 30),
-                  _buildBalanceCard(), // Thẻ số dư nổi (Floating Card)
+                  _buildBalanceCard(),
                   const SizedBox(height: 30),
-                  _buildTransactionList(), // Danh sách giao dịch bên dưới
+                  _buildTransactionList(transactions),
                 ],
               ),
             ),
@@ -117,9 +99,21 @@ class HomeScreen extends StatelessWidget {
 
   // --- CÁC WIDGET THÀNH PHẦN ---
 
+  Widget _buildBlurCircle(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
+        child: Container(color: Colors.transparent),
+      ),
+    );
+  }
+
   Widget _buildBackgroundHeader(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.3, // Chiếm 30% chiều cao
+      height: MediaQuery.of(context).size.height * 0.3,
       width: double.infinity,
       decoration: const BoxDecoration(
         color: AppColors.primary,
@@ -170,56 +164,60 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildBalanceCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    return ClipRRect(
+      // Bo góc cho hiệu ứng kính
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+            ), // Viền kính
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Text(
-            "Tổng số dư hiện tại",
-            style: TextStyle(color: AppColors.textGrey, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "25,450,000 đ",
-            style: TextStyle(
-              color: AppColors.textDark,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Divider(color: Color(0xFFF0F0F0)),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Column(
             children: [
-              _buildStatItem(
-                "Thu nhập",
-                "30.0tr",
-                AppColors.accentGreen,
-                Icons.arrow_downward,
+              const Text(
+                "Tổng số dư hiện tại",
+                style: TextStyle(color: AppColors.textGrey, fontSize: 14),
               ),
-              _buildStatItem(
-                "Chi tiêu",
-                "4.5tr",
-                AppColors.accentRed,
-                Icons.arrow_upward,
+              const SizedBox(height: 8),
+              Text(
+                currencyFormat.format(25450000),
+                style: const TextStyle(
+                  color: AppColors.textDark,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Divider(color: Color(0xFFF0F0F0)),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItem(
+                    "Thu nhập",
+                    currencyFormat.format(2540000), // Xài ở đây
+                    AppColors.accentGreen,
+                    Icons.arrow_downward,
+                  ),
+                  _buildStatItem(
+                    "Chi tiêu",
+                    currencyFormat.format(2545000), // Và ở đây
+                    AppColors.accentRed,
+                    Icons.arrow_upward,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -258,10 +256,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionList() {
+  Widget _buildTransactionList(List<Transaction> transactions) {
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -283,25 +284,35 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 5),
-          // Danh sách giao dịch
-          ListView.builder(
-            shrinkWrap: true, // Quan trọng: để ListView bọc vừa nội dung
-            physics:
-                const NeverScrollableScrollPhysics(), // Để cuộn theo SingleChildScrollView bên ngoài
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final item = transactions[index];
-              return _buildTransactionItem(item);
-            },
-          ),
-          const SizedBox(height: 20),
+
+          const SizedBox(height: 12),
+          transactions.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "Chưa có giao dịch nào",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: transactions.length,
+                  itemBuilder: (context, index) {
+                    final tx = transactions[index];
+                    return _buildTransactionItem(tx, currencyFormat);
+                  },
+                ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(Map<String, dynamic> item) {
+  Widget _buildTransactionItem(Transaction tx, NumberFormat fmt) {
+    bool isExpense = tx.type == TransactionType.expense;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -319,38 +330,25 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Khối Icon với màu Pastel
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
-              color: (item['color'] as Color).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(item['icon'], color: item['color'], size: 26),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(15)),
+            child: Icon(Icons.shopping_bag, color: AppColors.primary),
           ),
           const SizedBox(width: 16),
 
-          // Nội dung: Tên và Ngày tháng
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item['title'],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: AppColors.textDark,
-                  ),
+                  tx.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
                 Text(
-                  "${item['category']} • ${item['date']}",
-                  style: const TextStyle(
-                    color: AppColors.textGrey,
-                    fontSize: 12,
-                  ),
+                  DateFormat('dd/MM/yyyy').format(tx.date),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ],
             ),
@@ -358,13 +356,10 @@ class HomeScreen extends StatelessWidget {
 
           // Số tiền
           Text(
-            "${item['isExpense'] ? '-' : '+'}${item['amount']}",
+            "${isExpense ? '-' : '+'}${fmt.format(tx.amount)}",
             style: TextStyle(
-              color: item['isExpense']
-                  ? AppColors.accentRed
-                  : AppColors.accentGreen,
+              color: isExpense ? AppColors.accentRed : AppColors.accentGreen,
               fontWeight: FontWeight.bold,
-              fontSize: 15,
             ),
           ),
         ],
