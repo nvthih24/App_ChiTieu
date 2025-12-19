@@ -11,6 +11,10 @@ class TransactionProvider with ChangeNotifier {
 
   List<Transaction> get transactions => _transactions;
 
+  DateTime _selectedDate = DateTime.now();
+
+  DateTime get selectedDate => _selectedDate;
+
   // Constructor: Tự động tải dữ liệu khi khởi tạo Provider
   TransactionProvider() {
     _loadTransactions();
@@ -24,15 +28,28 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Hàm để đổi tháng lọc
+  void setSelectedDate(DateTime date) {
+    _selectedDate = date;
+    notifyListeners(); // Thông báo để UI load lại dữ liệu theo tháng mới
+  }
+
+  List<Transaction> get filteredTransactions {
+    return _transactions.where((t) {
+      return t.date.month == _selectedDate.month &&
+          t.date.year == _selectedDate.year;
+    }).toList();
+  }
+
   // Tính tổng thu nhập
-  double get totalIncome => _transactions
+  double get totalIncome => filteredTransactions
       .where(
         (t) => t.typeString == 'income',
       ) // Lưu ý: Dùng typeString vì Hive lưu String
       .fold(0, (sum, item) => sum + item.amount);
 
   // Tính tổng chi tiêu
-  double get totalExpense => _transactions
+  double get totalExpense => filteredTransactions
       .where((t) => t.typeString == 'expense')
       .fold(0, (sum, item) => sum + item.amount);
 
@@ -42,7 +59,7 @@ class TransactionProvider with ChangeNotifier {
   // Hàm tính toán dữ liệu cho biểu đồ tròn (gom nhóm theo category)
   Map<String, double> getCategoryData() {
     Map<String, double> data = {};
-    for (var tx in _transactions) {
+    for (var tx in filteredTransactions) {
       // Chỉ thống kê các khoản chi tiêu (expense)
       if (tx.typeString == 'expense') {
         data[tx.category] = (data[tx.category] ?? 0) + tx.amount;

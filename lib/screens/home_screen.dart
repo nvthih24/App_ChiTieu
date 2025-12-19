@@ -15,7 +15,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final transactionProvider = Provider.of<TransactionProvider>(context);
-    final transactions = transactionProvider.transactions;
+    final transactions = transactionProvider.filteredTransactions;
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -102,7 +102,7 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  _buildTopNav(),
+                  _buildTopNav(context, transactionProvider),
                   const SizedBox(height: 30),
                   _buildBalanceCard(transactionProvider),
                   const SizedBox(height: 30),
@@ -144,7 +144,9 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopNav() {
+  Widget _buildTopNav(BuildContext context, TransactionProvider provider) {
+    final date = provider.selectedDate;
+    final monthStr = DateFormat('MM / yyyy').format(date);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -168,13 +170,37 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(15),
             ),
-            child: IconButton(
-              icon: const Icon(Icons.notifications_none, color: Colors.white),
-              onPressed: () {},
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left, color: Colors.white),
+                  onPressed: () {
+                    provider.setSelectedDate(
+                      DateTime(date.year, date.month - 1),
+                    );
+                  },
+                ),
+                Text(
+                  monthStr,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, color: Colors.white),
+                  onPressed: () {
+                    provider.setSelectedDate(
+                      DateTime(date.year, date.month + 1),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -310,15 +336,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           transactions.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      "Chưa có giao dịch nào",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                )
+              ? _buildEmptyState()
               : AnimationLimiter(
                   child: ListView.builder(
                     shrinkWrap: true,
@@ -473,6 +491,56 @@ class HomeScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               color: isActive ? AppColors.primary : AppColors.textGrey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      height: 300, // Chiều cao cố định để nó chiếm không gian đẹp
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 1. Hình tròn nền
+          Container(
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(
+                0.1,
+              ), // Màu nền mờ theo tông chủ đạo
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded, // Icon tờ hóa đơn
+              size: 60,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 2. Dòng thông báo chính
+          const Text(
+            "Chưa có giao dịch",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // 3. Dòng kêu gọi hành động
+          Text(
+            "Hãy chạm vào nút (+) để\nthêm chi tiêu đầu tiên trong tháng",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+              height: 1.5,
             ),
           ),
         ],

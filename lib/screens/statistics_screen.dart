@@ -10,6 +10,7 @@ class StatisticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TransactionProvider>();
+    
     final categoryData = provider.getCategoryData();
 
     return Scaffold(

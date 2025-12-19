@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'models/transaction.dart';
 import 'models/category.dart';
 import 'providers/category_provider.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,32 +20,40 @@ void main() async {
   await Hive.openBox<Transaction>('transactions_box');
   await Hive.openBox<Category>('categories_box');
 
+  var settingsBox = await Hive.openBox('settings_box');
+
+  bool hasSeenOnboarding = settingsBox.get(
+    'hasSeenOnboarding',
+    defaultValue: false,
+  );
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
       ],
-      child: const ExpenseTrackerApp(),
+      child: ExpenseTrackerApp(startScreen: !hasSeenOnboarding),
     ),
   );
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
-  const ExpenseTrackerApp({super.key});
+  final bool startScreen;
+
+  const ExpenseTrackerApp({super.key, required this.startScreen});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Finance Pro',
+      title: 'Sổ Thu Chi Pro',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
           background: AppColors.background,
         ),
-        // Thiết lập Font chữ tiêu chuẩn cho toàn app
         textTheme: GoogleFonts.poppinsTextTheme(),
         cardTheme: CardThemeData(
           elevation: 0,
@@ -54,7 +63,7 @@ class ExpenseTrackerApp extends StatelessWidget {
           color: AppColors.surface,
         ),
       ),
-      home: HomeScreen(),
+      home: startScreen ? const OnboardingScreen() : HomeScreen(),
     );
   }
 }
