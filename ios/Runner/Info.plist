@@ -7,7 +7,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>App Chitieu</string>
 	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
+	<string>Sổ Thu Chi Pro</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>

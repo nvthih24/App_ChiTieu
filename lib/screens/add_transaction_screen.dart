@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
 import '../models/transaction.dart';
 import 'package:provider/provider.dart';
+import '../providers/category_provider.dart';
+import '../models/category.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
@@ -175,33 +177,75 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   Widget _buildCategoryGrid() {
+    final categoryProvider = Provider.of<CategoryProvider>(context);
+    final categories = categoryProvider.categories;
     return SizedBox(
       height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
+        itemCount: categories.length + 1,
         itemBuilder: (context, index) {
+          if (index == categories.length) {
+            return GestureDetector(
+              onTap: _showAddCategoryDialog, // Hàm hiển thị popup thêm mới
+              child: Container(
+                width: 80,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey[400]!),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add, color: Colors.grey, size: 30),
+                    SizedBox(height: 4),
+                    Text(
+                      "Thêm",
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           final cat = categories[index];
-          bool isSelected = selectedCategory == cat['name'];
+          bool isSelected = selectedCategory == cat.name;
+
           return GestureDetector(
-            onTap: () => setState(() => selectedCategory = cat['name']),
+            onTap: () => setState(() => selectedCategory = cat.name),
+            onLongPress: () {
+              _showDeleteCategoryDialog(cat);
+            },
             child: Container(
               width: 80,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                border: isSelected
+                    ? null
+                    : Border.all(color: Colors.grey[200]!),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    cat['icon'],
-                    color: isSelected ? Colors.white : cat['color'],
+                    IconData(
+                      cat.iconCode,
+                      fontFamily: 'MaterialIcons',
+                    ), // Đọc mã Icon
+                    color: isSelected
+                        ? Colors.white
+                        : Color(cat.colorValue), // Đọc mã màu
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    cat['name'],
+                    cat.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
                       color: isSelected ? Colors.white : AppColors.textDark,
@@ -294,6 +338,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (context) {
+        FocusScope.of(context).unfocus();
         return StatefulBuilder(
           // Dùng StatefulBuilder để cập nhật UI ngay trong BottomSheet
           builder: (context, setModalState) {
@@ -373,6 +418,270 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           },
         );
       },
+    );
+  }
+
+  // Hàm hiển thị Popup nhập tên danh mục mới
+  void _showAddCategoryDialog() {
+    String newCategoryName = "";
+    // Mặc định chọn icon đầu tiên và màu đầu tiên
+    int selectedIconCode = Icons.local_cafe.codePoint;
+    int selectedColorValue = Colors.orange.value;
+
+    // Danh sách các Icon phổ biến để chọn
+    final List<IconData> availableIcons = [
+      Icons.local_cafe,
+      Icons.restaurant,
+      Icons.shopping_cart,
+      Icons.directions_car,
+      Icons.flight,
+      Icons.movie,
+      Icons.fitness_center,
+      Icons.school,
+      Icons.work,
+      Icons.pets,
+      Icons.home,
+      Icons.local_hospital,
+    ];
+
+    // Danh sách màu sắc đẹp
+    final List<Color> availableColors = [
+      Colors.orange,
+      Colors.blue,
+      Colors.pink,
+      Colors.purple,
+      Colors.red,
+      Colors.green,
+      Colors.teal,
+      Colors.brown,
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        // Dùng StatefulBuilder để cập nhật UI trong Dialog khi chọn Icon/Màu
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: const Text(
+              "Tạo danh mục mới",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Nhập tên
+                    TextField(
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: "Tên danh mục (VD: Gym, Trà sữa...)",
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onChanged: (val) => newCategoryName = val,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 2. Chọn Icon
+                    const Text(
+                      "Chọn biểu tượng:",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: availableIcons.map((icon) {
+                        bool isSelected = selectedIconCode == icon.codePoint;
+                        return GestureDetector(
+                          onTap: () {
+                            setStateDialog(
+                              () => selectedIconCode = icon.codePoint,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Color(selectedColorValue).withOpacity(0.2)
+                                  : Colors.grey[100],
+                              border: isSelected
+                                  ? Border.all(
+                                      color: Color(selectedColorValue),
+                                      width: 2,
+                                    )
+                                  : null,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              icon,
+                              color: isSelected
+                                  ? Color(selectedColorValue)
+                                  : Colors.grey,
+                              size: 24,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 3. Chọn Màu
+                    const Text(
+                      "Chọn màu sắc:",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: availableColors.map((color) {
+                        bool isSelected = selectedColorValue == color.value;
+                        return GestureDetector(
+                          onTap: () {
+                            setStateDialog(
+                              () => selectedColorValue = color.value,
+                            );
+                          },
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: isSelected
+                                  ? Border.all(color: Colors.black, width: 3)
+                                  : null,
+                              boxShadow: [
+                                if (isSelected)
+                                  BoxShadow(
+                                    color: color.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                              ],
+                            ),
+                            child: isSelected
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 20,
+                                  )
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (newCategoryName.isEmpty) return;
+
+                  final newCat = Category(
+                    id: DateTime.now().toString(),
+                    name: newCategoryName,
+                    iconCode: selectedIconCode, // Lưu icon đã chọn
+                    colorValue: selectedColorValue, // Lưu màu đã chọn
+                    type: 'expense',
+                  );
+
+                  Provider.of<CategoryProvider>(
+                    context,
+                    listen: false,
+                  ).addCategory(newCat);
+                  Navigator.pop(ctx);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(selectedColorValue),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Tạo ngay",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // Hàm hiển thị hộp thoại xác nhận xóa
+  void _showDeleteCategoryDialog(Category category) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Xóa danh mục?",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "Bạn có chắc muốn xóa danh mục '${category.name}' không? Hành động này không thể hoàn tác.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              // 1. Xóa khỏi Database
+              Provider.of<CategoryProvider>(
+                context,
+                listen: false,
+              ).deleteCategory(category);
+
+              // 2. Nếu danh mục đang chọn bị xóa -> Reset lại lựa chọn
+              if (selectedCategory == category.name) {
+                setState(() {
+                  selectedCategory = "Ăn uống"; // Hoặc để trống ""
+                });
+              }
+
+              Navigator.pop(ctx);
+
+              // 3. Thông báo nhẹ
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Đã xóa danh mục ${category.name}")),
+              );
+            },
+            child: const Text(
+              "Xóa",
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

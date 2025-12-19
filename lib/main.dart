@@ -6,22 +6,25 @@ import 'screens/home_screen.dart';
 import 'providers/transaction_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/transaction.dart';
+import 'models/category.dart';
+import 'providers/category_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 1. Khởi tạo Hive
   await Hive.initFlutter();
 
-  // 2. Đăng ký Adapter để Hive biết cách đọc Transaction
   Hive.registerAdapter(TransactionAdapter());
+  Hive.registerAdapter(CategoryAdapter());
 
-  // 3. Mở một cái "Hộp" (Box) để đựng dữ liệu
   await Hive.openBox<Transaction>('transactions_box');
+  await Hive.openBox<Category>('categories_box');
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => TransactionProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+      ],
       child: const ExpenseTrackerApp(),
     ),
   );

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import 'dart:ui';
 import 'statistics_screen.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -306,8 +307,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
+
           transactions.isEmpty
               ? const Center(
                   child: Padding(
@@ -318,73 +319,138 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: transactions.length,
-                  itemBuilder: (context, index) {
-                    final tx = transactions[index];
-                    return _buildTransactionItem(tx, currencyFormat);
-                  },
+              : AnimationLimiter(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      final tx = transactions[index];
+
+                      return AnimationConfiguration.staggeredList(
+                        position: index,
+                        duration: const Duration(milliseconds: 375),
+                        child: SlideAnimation(
+                          verticalOffset: 50.0,
+                          child: FadeInAnimation(
+                            child: _buildTransactionItem(
+                              context,
+                              tx,
+                              currencyFormat,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(Transaction tx, NumberFormat fmt) {
+  Widget _buildTransactionItem(
+    BuildContext context,
+    Transaction tx,
+    NumberFormat fmt,
+  ) {
     bool isExpense = tx.typeString == 'expense';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        // Đổ bóng cực nhẹ để tạo chiều sâu
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+
+    return Dismissible(
+      key: ValueKey(tx.key),
+      direction: DismissDirection.endToStart,
+
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        alignment: Alignment.centerRight,
+        child: const Icon(Icons.delete_outline, color: Colors.white, size: 30),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(15)),
-            child: Icon(Icons.shopping_bag, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  DateFormat('dd/MM/yyyy').format(tx.date),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+      onDismissed: (direction) {
+        final deletedTransaction = tx;
+        final index = provider.transactions.indexOf(tx);
+        provider.deleteTransaction(index);
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Đã xóa: ${deletedTransaction.title}"),
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            action: SnackBarAction(
+              label: "HOÀN TÁC",
+              textColor: Colors.yellow,
+              onPressed: () {
+                provider.addTransaction(deletedTransaction);
+              },
             ),
           ),
-
-          // Số tiền
-          Text(
-            "${isExpense ? '-' : '+'}${fmt.format(tx.amount)}",
-            style: TextStyle(
-              color: isExpense ? AppColors.accentRed : AppColors.accentGreen,
-              fontWeight: FontWeight.bold,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: (isExpense ? Colors.red : Colors.green).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(
+                Icons.shopping_bag,
+                color: isExpense ? AppColors.accentRed : AppColors.accentGreen,
+              ),
+            ),
+            const SizedBox(width: 16),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tx.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    DateFormat('dd/MM/yyyy').format(tx.date),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+
+            // Số tiền
+            Text(
+              "${isExpense ? '-' : '+'}${fmt.format(tx.amount)}",
+              style: TextStyle(
+                color: isExpense ? AppColors.accentRed : AppColors.accentGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
