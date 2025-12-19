@@ -258,9 +258,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             amount: double.parse(amount),
             date: selectedDate,
             category: selectedCategory,
-            type: selectedCategory == "Lương"
-                ? TransactionType.income
-                : TransactionType.expense,
+            typeString: selectedCategory == "Lương" ? "income" : "expense",
           );
 
           // Đẩy dữ liệu lên Provider

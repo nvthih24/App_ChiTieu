@@ -39,6 +39,18 @@ class TransactionProvider with ChangeNotifier {
   // Tính số dư còn lại
   double get totalBalance => totalIncome - totalExpense;
 
+  // Hàm tính toán dữ liệu cho biểu đồ tròn (gom nhóm theo category)
+  Map<String, double> getCategoryData() {
+    Map<String, double> data = {};
+    for (var tx in _transactions) {
+      // Chỉ thống kê các khoản chi tiêu (expense)
+      if (tx.typeString == 'expense') {
+        data[tx.category] = (data[tx.category] ?? 0) + tx.amount;
+      }
+    }
+    return data;
+  }
+
   // Hàm thêm giao dịch mới và lưu vào Hive
   void addTransaction(Transaction transaction) {
     final box = Hive.box<Transaction>(_boxName);

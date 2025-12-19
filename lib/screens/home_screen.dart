@@ -334,7 +334,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildTransactionItem(Transaction tx, NumberFormat fmt) {
-    bool isExpense = tx.type == TransactionType.expense;
+    bool isExpense = tx.typeString == 'expense';
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
