@@ -4,8 +4,21 @@ import 'package:provider/provider.dart';
 import 'utils/app_colors.dart';
 import 'screens/home_screen.dart';
 import 'providers/transaction_provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/transaction.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Khởi tạo Hive
+  await Hive.initFlutter();
+
+  // 2. Đăng ký Adapter để Hive biết cách đọc Transaction
+  Hive.registerAdapter(TransactionAdapter());
+
+  // 3. Mở một cái "Hộp" (Box) để đựng dữ liệu
+  await Hive.openBox<Transaction>('transactions_box');
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => TransactionProvider(),

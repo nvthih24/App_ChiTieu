@@ -1,12 +1,26 @@
-enum TransactionType { income, expense }
+import 'package:hive/hive.dart';
 
-class Transaction {
+part 'transaction.g.dart';
+
+@HiveType(typeId: 0) // Mỗi model cần 1 typeId duy nhất
+class Transaction extends HiveObject {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String title;
+
+  @HiveField(2)
   final double amount;
+
+  @HiveField(3)
   final DateTime date;
+
+  @HiveField(4)
   final String category;
-  final TransactionType type;
+
+  @HiveField(5)
+  final String typeString; // Lưu enum dưới dạng String cho đơn giản
 
   Transaction({
     required this.id,
@@ -14,6 +28,6 @@ class Transaction {
     required this.amount,
     required this.date,
     required this.category,
-    required this.type,
+    required this.typeString,
   });
 }

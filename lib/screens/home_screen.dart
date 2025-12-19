@@ -6,6 +6,7 @@ import '../providers/transaction_provider.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import 'dart:ui';
+import 'statistics_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({super.key});
@@ -40,8 +41,25 @@ class HomeScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                _buildNavItem(Icons.home_rounded, "Trang chủ", true),
-                _buildNavItem(Icons.bar_chart_rounded, "Thống kê", false),
+                _buildNavItem(
+                  Icons.home_rounded,
+                  "Trang chủ",
+                  true,
+                  onTap: () {},
+                ),
+                _buildNavItem(
+                  Icons.bar_chart_rounded,
+                  "Thống kê",
+                  false,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StatisticsScreen(),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
             Row(
@@ -85,7 +103,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   _buildTopNav(),
                   const SizedBox(height: 30),
-                  _buildBalanceCard(),
+                  _buildBalanceCard(transactionProvider),
                   const SizedBox(height: 30),
                   _buildTransactionList(transactions),
                 ],
@@ -163,10 +181,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceCard() {
+  Widget _buildBalanceCard(TransactionProvider provider) {
+    // Thêm đầu vào là provider
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
     return ClipRRect(
-      // Bo góc cho hiệu ứng kính
       borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -176,9 +195,7 @@ class HomeScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-            ), // Viền kính
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
           ),
           child: Column(
             children: [
@@ -187,8 +204,9 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(color: AppColors.textGrey, fontSize: 14),
               ),
               const SizedBox(height: 8),
+              // DÙNG SỐ THỰC TỪ PROVIDER TẠI ĐÂY
               Text(
-                currencyFormat.format(25450000),
+                currencyFormat.format(provider.totalBalance),
                 style: const TextStyle(
                   color: AppColors.textDark,
                   fontSize: 32,
@@ -203,13 +221,17 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   _buildStatItem(
                     "Thu nhập",
-                    currencyFormat.format(2540000), // Xài ở đây
+                    currencyFormat.format(
+                      provider.totalIncome,
+                    ), // Số thực Thu nhập
                     AppColors.accentGreen,
                     Icons.arrow_downward,
                   ),
                   _buildStatItem(
                     "Chi tiêu",
-                    currencyFormat.format(2545000), // Và ở đây
+                    currencyFormat.format(
+                      provider.totalExpense,
+                    ), // Số thực Chi tiêu
                     AppColors.accentRed,
                     Icons.arrow_upward,
                   ),
@@ -367,10 +389,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
+  Widget _buildNavItem(
+    IconData icon,
+    String label,
+    bool isActive, {
+    VoidCallback? onTap,
+  }) {
     return MaterialButton(
       minWidth: 40,
-      onPressed: () {},
+      onPressed: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

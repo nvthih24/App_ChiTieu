@@ -1,28 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Thêm import này
 import '../models/transaction.dart';
 
 class TransactionProvider with ChangeNotifier {
-  // Danh sách giao dịch ban đầu (có thể để trống [])
-  final List<Transaction> _transactions = [];
+  // Tên box phải trùng với tên đã mở trong main.dart
+  static const String _boxName = 'transactions_box';
+
+  // Danh sách giao dịch lấy trực tiếp từ Hive
+  List<Transaction> _transactions = [];
 
   List<Transaction> get transactions => _transactions;
 
+  // Constructor: Tự động tải dữ liệu khi khởi tạo Provider
+  TransactionProvider() {
+    _loadTransactions();
+  }
+
+  // Hàm tải dữ liệu từ Hive box
+  void _loadTransactions() {
+    final box = Hive.box<Transaction>(_boxName);
+    // Chuyển dữ liệu từ Box thành List và đảo ngược để cái mới nhất lên đầu
+    _transactions = box.values.toList().reversed.toList();
+    notifyListeners();
+  }
+
   // Tính tổng thu nhập
   double get totalIncome => _transactions
-      .where((t) => t.type == TransactionType.income)
+      .where(
+        (t) => t.typeString == 'income',
+      ) // Lưu ý: Dùng typeString vì Hive lưu String
       .fold(0, (sum, item) => sum + item.amount);
 
   // Tính tổng chi tiêu
   double get totalExpense => _transactions
-      .where((t) => t.type == TransactionType.expense)
+      .where((t) => t.typeString == 'expense')
       .fold(0, (sum, item) => sum + item.amount);
 
   // Tính số dư còn lại
   double get totalBalance => totalIncome - totalExpense;
 
-  // Hàm thêm giao dịch mới
+  // Hàm thêm giao dịch mới và lưu vào Hive
   void addTransaction(Transaction transaction) {
-    _transactions.insert(0, transaction); // Thêm vào đầu danh sách
-    notifyListeners(); // Thông báo cho UI cập nhật lại
+    final box = Hive.box<Transaction>(_boxName);
+
+    // 1. Lưu vào Hive (Dữ liệu sẽ được ghi xuống ổ cứng)
+    box.add(transaction);
+
+    // 2. Cập nhật lại danh sách hiển thị
+    _loadTransactions();
+  }
+
+  // Bonus: Hàm xóa giao dịch (Ông có thể dùng sau này)
+  void deleteTransaction(int index) {
+    final box = Hive.box<Transaction>(_boxName);
+    // Lưu ý: Vì mình đảo ngược list để hiển thị, nên index xóa cần tính toán lại
+    // hoặc xóa trực tiếp bằng key của HiveObject
+    _transactions[index].delete();
+    _loadTransactions();
   }
 }
